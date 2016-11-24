@@ -1,9 +1,9 @@
 #include <sys/syscall.h>
 
 #ifdef __i386
-    int SYS_CALLS[256] = {3, 4, 5, 6, 8, 11, 13, 33, 45, 85, 91, 122, 125, 140, 192, 197, 243, 252};
+    int SYS_CALLS[256] = {3, 4, 5, 6, 8, 11, 13, 33, 45, 85, 91, 122, 125, 140, 192, 197, 243, 252, 0};
 #else
-    int SYS_CALLS[256] = {0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 21, 59, 63, 89, 158, 201, 205, 231, 240, 252};
+    int SYS_CALLS[256] = {0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 21, 59, 63, 89, 158, 201, 205, 231, 240, 252, 0};
 #endif
 
 #define BUFF_SIZE 1024
@@ -23,7 +23,7 @@
     #define REG_ARG_2(x) ((x)->ecx)
 #endif
 
-u_char *calls;
+u_char calls[400];
 
 enum JUDGE_RESULT {
     AC = 0,   //0 Accepted
@@ -49,12 +49,12 @@ struct Result {
 void initcall()
 {
     int i = 0;
-    calls = (u_char *)malloc(sizeof(sizeof(u_char) * CALLS_MAX));
     printf("SYSCALLS:");
     while (SYS_CALLS[i] || !i)
     {
         printf(" %d", SYS_CALLS[i]);
-        calls[SYS_CALLS[i++]] = 1;
+        calls[SYS_CALLS[i]] = 1;
+	i++;
     }
     printf("\n");
 }
