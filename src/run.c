@@ -191,8 +191,6 @@ char* runit(const char* json)
     int time = cJSON_GetObjectItem(root, "timelimit")->valueint;
     int java = cJSON_GetObjectItem(root, "java")->valueint;
 
-    setResLimit(time, memory, java);
-
     struct Result rst;
 
     int ret = run((const char **)argv, fd_in, fd_out, fd_err, java, time, memory, &rst);
