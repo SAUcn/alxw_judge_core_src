@@ -14,10 +14,9 @@
 #include "access.c"
 #include "limit.c"
 
-void error(const char *err)
-{
-    //TODO
-}
+char *err_str = NULL;
+
+#define ERROR(X) { err_str = (X); break; }
 
 int traceLoop(int java, int time_limit, int memory_limit, pid_t pid, struct Result *rst)
 {
@@ -26,20 +25,21 @@ int traceLoop(int java, int time_limit, int memory_limit, pid_t pid, struct Resu
     struct rusage ru;
     struct user_regs_struct regs;
     
-    rst->memory_used = get_proc_status(pid, "VmRSS:");
+    rst->memory_used = ReadMemoryConsumption(pid);//get_proc_status(pid, "VmRSS:");
 
     rst->judge_result = AC;
 
     while (1)
     {
         if (wait4(pid, &status, 0, &ru) == -1)
-            error("wait4 [WSTOPPED] failure");
+            ERROR("wait4 [WSTOPPED] failure");
 
         //Get memory
         if (java)
+            //Is OK? I don't know
             memory = get_page_fault_mem(ru, pid);
         else
-            memory = get_proc_status(pid, "VmPeak:");
+            memory = ReadMemoryConsumption(pid);//get_proc_status(pid, "VmPeak:");
         if (memory > rst->memory_used)
             rst->memory_used = memory;
 
@@ -114,7 +114,7 @@ int traceLoop(int java, int time_limit, int memory_limit, pid_t pid, struct Resu
         }
 
         if (ptrace(PTRACE_GETREGS, pid, NULL, &regs) == -1)
-            error("PTRACE_GETREGS failure");
+            ERROR("PTRACE_GETREGS failure");
         if (incall && !java)
         {
             int ret = checkAccess(pid, &regs);
@@ -154,7 +154,8 @@ int run(const char * argv[], const char* fd_in, const char* fd_out, const char* 
     pid_t pid = fork();
     if (pid < 0)
     {
-        error("Fork error");
+        while (1)
+            ERROR("Fork error");
         return 1;
     }
 
@@ -163,9 +164,12 @@ int run(const char * argv[], const char* fd_in, const char* fd_out, const char* 
         freopen(fd_in, "r", stdin);
         freopen(fd_out, "w", stdout);
         freopen(fd_err, "w", stderr);
-        setResLimit(time, memory, java);
-        ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+        if (setResLimit(time, memory, java) == -1)
+            exit(1);
+        if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1)
+            exit(1);
         execvp(argv[0], (char * const *)argv);
+        exit(1);
     } else {
         int t = nice(19);
         t = traceLoop(java, time, memory, pid, rst);
@@ -193,12 +197,21 @@ char* runit(const char* json)
 
     struct Result rst;
 
+    err_str = NULL;
+
     int ret = run((const char **)argv, fd_in, fd_out, fd_err, java, time, memory, &rst);
 
     cJSON *fmt = cJSON_CreateObject();
-    cJSON_AddNumberToObject(fmt, "timeused", rst.time_used);
-    cJSON_AddNumberToObject(fmt, "memoryused", rst.memory_used);
-    cJSON_AddNumberToObject(fmt, "result", rst.judge_result);
+    if (err_str != NULL)
+    {
+        cJSON_AddNumberToObject(fmt, "timeused", 0);
+        cJSON_AddNumberToObject(fmt, "memoryused", 0);
+        cJSON_AddNumberToObject(fmt, "result", SE);
+    } else {
+        cJSON_AddNumberToObject(fmt, "timeused", rst.time_used);
+        cJSON_AddNumberToObject(fmt, "memoryused", rst.memory_used);
+        cJSON_AddNumberToObject(fmt, "result", rst.judge_result);
+    }
 
     char * r = cJSON_Print(fmt);
 

@@ -6,6 +6,8 @@
     int SYS_CALLS[256] = {0, 1, 2, 3, 4, 5, 8, 9, 10, 11, 12, 21, 59, 63, 89, 158, 201, 205, 231, 240, 252, 0};
 #endif
 
+u_char calls[256];
+
 #define BUFF_SIZE 1024
 #define CALLS_MAX 400
 
@@ -22,8 +24,6 @@
     #define REG_ARG_1(x) ((x)->ebx)
     #define REG_ARG_2(x) ((x)->ecx)
 #endif
-
-u_char calls[400];
 
 enum JUDGE_RESULT {
     AC = 0,   //0 Accepted
@@ -54,7 +54,7 @@ void initcall()
     {
         printf(" %d", SYS_CALLS[i]);
         calls[SYS_CALLS[i]] = 1;
-	i++;
+        i++;
     }
     printf("\n");
 }
