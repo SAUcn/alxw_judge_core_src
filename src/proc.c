@@ -63,5 +63,5 @@ int ReadMemoryConsumption(pid_t pid) {
     fclose(fp);
     if (vmPeak)
         vmSize = vmPeak;
-    return vmSize - vmExe - vmLib - vmStack;
+    return vmSize - vmExe - vmLib;
 }

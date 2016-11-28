@@ -17,6 +17,8 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    printf("Daemon listern on socket: %s\n", argv[1]);
+
     initcall();
 
     init_socket(argv[1]);
